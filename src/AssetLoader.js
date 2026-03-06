@@ -232,15 +232,18 @@ async function loadBackgrounds(levelPkg) {
   if (Array.isArray(layers) && layers.length > 0) {
     try {
       const bg = {};
-      for (const layer of layers) {
-        const key = layer?.key;
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+        const key = layer?.key ?? `layer${i}`; // allow entries without a key
         const src = layer?.src || layer?.path || layer?.img;
-        if (!key) continue;
+        if (!src) continue;
 
         // If src is missing, keep it undefined but DON'T crash here;
         // validation will catch it with a clean error.
-        bg[key] = src ? await loadImageAsync(src) : undefined;
+        bg[key] = await loadImageAsync(src);
       }
+      // If nothing loaded, fall back to defaults.
+      if (Object.keys(bg).length === 0) return await loadDefaultBackgrounds();
       return bg;
     } catch (e) {
       console.warn(
