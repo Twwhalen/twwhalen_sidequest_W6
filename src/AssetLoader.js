@@ -217,6 +217,12 @@ function loadImageAsync(path) {
 }
 
 async function loadBackgrounds(levelPkg) {
+  const loadDefaultBackgrounds = async () => ({
+    bgFar: await loadImageAsync("assets/background_layer_1.png"),
+    bgMid: await loadImageAsync("assets/background_layer_2.png"),
+    bgFore: await loadImageAsync("assets/background_layer_3.png"),
+  });
+
   // If levels.json supplies parallaxLayers with keys and sources, load them dynamically.
   // Expected shape (flexible):
   // levelPkg.parallaxLayers = [{ key:"bgFar", src:"assets/..." }, ...]
@@ -224,25 +230,29 @@ async function loadBackgrounds(levelPkg) {
   const layers = levelPkg?.level?.view?.parallax || levelPkg?.parallaxLayers;
 
   if (Array.isArray(layers) && layers.length > 0) {
-    const bg = {};
-    for (const layer of layers) {
-      const key = layer?.key;
-      const src = layer?.src || layer?.path || layer?.img;
-      if (!key) continue;
+    try {
+      const bg = {};
+      for (const layer of layers) {
+        const key = layer?.key;
+        const src = layer?.src || layer?.path || layer?.img;
+        if (!key) continue;
 
-      // If src is missing, keep it undefined but DON'T crash here;
-      // validation will catch it with a clean error.
-      bg[key] = src ? await loadImageAsync(src) : undefined;
+        // If src is missing, keep it undefined but DON'T crash here;
+        // validation will catch it with a clean error.
+        bg[key] = src ? await loadImageAsync(src) : undefined;
+      }
+      return bg;
+    } catch (e) {
+      console.warn(
+        "[AssetLoader] Failed to load custom parallax; using defaults.",
+        e?.message ?? e,
+      );
+      return await loadDefaultBackgrounds();
     }
-    return bg;
   }
 
   // Default fallback set
-  return {
-    bgFar: await loadImageAsync("assets/background_layer_1.png"),
-    bgMid: await loadImageAsync("assets/background_layer_2.png"),
-    bgFore: await loadImageAsync("assets/background_layer_3.png"),
-  };
+  return await loadDefaultBackgrounds();
 }
 
 async function resolveAniImages(anis, label = "entity") {
