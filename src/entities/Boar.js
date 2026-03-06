@@ -34,10 +34,10 @@ export class BoarController {
     this.wallsL = null;
     this.wallsR = null;
 
-    // tuning defaults (match monolith)
+    // tuning defaults
     const b = this.tuning.boar || {};
-    this.W = b.w ?? 18;
-    this.H = b.h ?? 12;
+    this.W = b.w ?? 15;
+    this.H = b.h ?? 10;
     this.SPEED = b.speed ?? 0.6;
     this.HP = b.hp ?? 3;
 
@@ -103,6 +103,10 @@ export class BoarController {
 
     e.w = this.W;
     e.h = this.H;
+
+    // ← ADDED: scale blob image down to tile-based collider size
+    e.scale.x = this.W / 128;
+    e.scale.y = this.H / 128;
 
     e.friction = 0;
     e.bounciness = 0;
@@ -274,7 +278,7 @@ export class BoarController {
       return;
     }
 
-    // if not grounded, don’t patrol
+    // if not grounded, don't patrol
     if (!grounded) {
       e.ani = "throwPose";
       e.ani.frame = 0;
@@ -290,12 +294,21 @@ export class BoarController {
 
     // probe-based turning rules
     const noGroundAhead = !this._frontHasGround(e);
-    const frontHitsLeaf = this.leaf ? e.frontProbe.overlapping(this.leaf) : false;
-    const frontHitsFire = this.fire ? e.frontProbe.overlapping(this.fire) : false;
+    const frontHitsLeaf = this.leaf
+      ? e.frontProbe.overlapping(this.leaf)
+      : false;
+    const frontHitsFire = this.fire
+      ? e.frontProbe.overlapping(this.fire)
+      : false;
     const frontHitsWall = this._frontHitsWall(e);
     const headSeesFire = this.fire ? e.footProbe.overlapping(this.fire) : false;
 
-    const dangerNow = noGroundAhead || frontHitsLeaf || frontHitsFire || frontHitsWall || headSeesFire;
+    const dangerNow =
+      noGroundAhead ||
+      frontHitsLeaf ||
+      frontHitsFire ||
+      frontHitsWall ||
+      headSeesFire;
 
     if (e.turnTimer === 0 && this._shouldTurnNow(e, dangerNow)) {
       this._turn(e, -e.dir);

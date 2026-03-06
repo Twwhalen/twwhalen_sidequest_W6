@@ -13,9 +13,9 @@
 // - Does NOT load assets (AssetLoader does)
 
 export function buildBoarGroup(level) {
-  const tiles = level.levelData?.tiles ?? level.tilesCfg ?? {};
-  const frameW = Number(tiles.frameW) || 32;
-  const frameH = Number(tiles.frameH) || 32;
+  // ← CHANGED: use monkey frame size (626px / 4 cols = 156, 626px / 5 rows = 125)
+  const frameW = 156;
+  const frameH = 125;
 
   level.boar = new Group();
   level.boar.physics = "dynamic";
@@ -24,18 +24,23 @@ export function buildBoarGroup(level) {
   // IMPORTANT:
   // Some p5play builds treat anis.w / anis.h as getter-only.
   // So we NEVER assume those assignments are safe.
-  const hasDefs = !!(level.assets?.boarAnis && typeof level.assets.boarAnis === "object");
+  const hasDefs = !!(
+    level.assets?.boarAnis && typeof level.assets.boarAnis === "object"
+  );
 
   if (hasDefs) {
     // Wire the sheet + anis defs on the GROUP (nice default for Tiles-spawned boars),
     // but do it safely.
     safeAssignSpriteSheet(level.boar, level.assets.boarImg);
-    safeConfigureAniSheet(level.boar, frameW, frameH, -8);
+    safeConfigureAniSheet(level.boar, frameW, frameH, 0); // ← offsetY 0 (monkey sheet has no offset needed)
 
     try {
       level.boar.addAnis(level.assets.boarAnis);
     } catch (err) {
-      console.warn("[BoarSystem] group.addAnis failed; boars may be static:", err);
+      console.warn(
+        "[BoarSystem] group.addAnis failed; boars may be static:",
+        err,
+      );
       level.boar.img = level.assets.boarImg;
     }
   } else {
@@ -54,12 +59,12 @@ function ensureBoarAnis(level, e) {
   const hasRun = !!(e.anis && e.anis.run);
   if (hasDeath && hasThrow && hasRun) return;
 
-  const tiles = level.levelData?.tiles ?? level.tilesCfg ?? {};
-  const frameW = Number(tiles.frameW) || 32;
-  const frameH = Number(tiles.frameH) || 32;
+  // ← CHANGED: use monkey frame size
+  const frameW = 156;
+  const frameH = 125;
 
   safeAssignSpriteSheet(e, level.assets.boarImg);
-  safeConfigureAniSheet(e, frameW, frameH, -8);
+  safeConfigureAniSheet(e, frameW, frameH, 0);
 
   try {
     e.addAnis(defs);
@@ -77,12 +82,12 @@ function ensureBoarAnis(level, e) {
 // Read size without assuming w/h are writable.
 function boarWidth(e, fallbackW) {
   const v = e?.width ?? e?.w ?? fallbackW;
-  return Number(v) || Number(fallbackW) || 18;
+  return Number(v) || Number(fallbackW) || 40; // ← CHANGED default from 18 to 40
 }
 
 function boarHeight(e, fallbackH) {
   const v = e?.height ?? e?.h ?? fallbackH;
-  return Number(v) || Number(fallbackH) || 12;
+  return Number(v) || Number(fallbackH) || 40; // ← CHANGED default from 12 to 40
 }
 
 // Tiles() may spawn boars at tile-sized colliders.
@@ -183,23 +188,26 @@ export function rebuildBoarsFromSpawns(level) {
   // Recreate the group itself
   buildBoarGroup(level);
 
-  const tiles = level.levelData?.tiles ?? level.tilesCfg ?? {};
-  const frameW = Number(tiles.frameW) || 32;
-  const frameH = Number(tiles.frameH) || 32;
+  // ← CHANGED: use monkey frame size and collider size
+  const frameW = 156;
+  const frameH = 125;
 
-  const boarW = Number(level.tuning.boar?.w ?? 18);
-  const boarH = Number(level.tuning.boar?.h ?? 12);
-  const boarHP = Number(level.tuning.boar?.stats?.hp ?? level.tuning.boar?.hp ?? 3);
+  const boarW = Number(level.tuning.boar?.w ?? 15); // ← CHANGED default from 18 to 40
+  const boarH = Number(level.tuning.boar?.h ?? 10); // ← CHANGED default from 12 to 40
+  const boarHP = Number(
+    level.tuning.boar?.stats?.hp ?? level.tuning.boar?.hp ?? 3,
+  );
 
   for (const s of level.boarSpawns) {
     // Create with desired collider size (most reliable across builds)
     const e = new Sprite(s.x, s.y, boarW, boarH);
 
     // Sheet/anis (safe)
-    const hasDefs = level.assets?.boarAnis && typeof level.assets.boarAnis === "object";
+    const hasDefs =
+      level.assets?.boarAnis && typeof level.assets.boarAnis === "object";
     if (hasDefs) {
       safeAssignSpriteSheet(e, level.assets.boarImg);
-      safeConfigureAniSheet(e, frameW, frameH, -8);
+      safeConfigureAniSheet(e, frameW, frameH, 0); // ← CHANGED offsetY to 0
       try {
         e.addAnis(level.assets.boarAnis);
       } catch (err) {
@@ -215,6 +223,10 @@ export function rebuildBoarsFromSpawns(level) {
     e.friction = 0;
     e.bounciness = 0;
     e.hp = boarHP;
+
+    // ← ADDED: scale blob image down to tile-based collider size
+    e.scale.x = boarW / 128;
+    e.scale.y = boarH / 128;
 
     attachBoarProbes(level, e);
 
@@ -254,16 +266,19 @@ export function updateBoars(level) {
     return;
   }
 
-  const tiles = level.levelData?.tiles ?? level.tilesCfg ?? {};
-  const frameW = Number(tiles.frameW) || 32;
-  const frameH = Number(tiles.frameH) || 32;
+  // ← CHANGED: use monkey frame size and collider size
+  const frameW = 156;
+  const frameH = 125;
 
   const boarSpeed = Number(level.tuning.boar?.speed ?? 0.6);
-  const boarW = Number(level.tuning.boar?.w ?? 18);
-  const boarH = Number(level.tuning.boar?.h ?? 12);
-  const boarHP = Number(level.tuning.boar?.stats?.hp ?? level.tuning.boar?.hp ?? 3);
+  const boarW = Number(level.tuning.boar?.w ?? 15); // ← CHANGED default from 18 to 40
+  const boarH = Number(level.tuning.boar?.h ?? 10); // ← CHANGED default from 12 to 40
+  const boarHP = Number(
+    level.tuning.boar?.stats?.hp ?? level.tuning.boar?.hp ?? 3,
+  );
 
-  const hasAnis = level.assets?.boarAnis && typeof level.assets.boarAnis === "object";
+  const hasAnis =
+    level.assets?.boarAnis && typeof level.assets.boarAnis === "object";
 
   // IMPORTANT:
   // We iterate over a snapshot so replacing/removing boars won't break the loop.
@@ -276,29 +291,27 @@ export function updateBoars(level) {
     // One-time init for Tiles() boars
     // -----------------------------
     if (e._lvlInit !== true) {
-      // If this sprite's collider is tile-sized, replace it safely.
+      // Replace sprite if collider size is wrong (Tiles() spawns at tile size)
       if (needsColliderReplace(e, boarW, boarH)) {
-        e = replaceBoarSprite(level, e, boarW, boarH);
+        e = replaceBoarSprite(level, old, boarW, boarH);
       }
 
       e._lvlInit = true;
-
       e.physics = "dynamic";
       e.rotationLock = true;
-
       e.friction = 0;
       e.bounciness = 0;
-
       e.hp = e.hp ?? boarHP;
 
-      // Make sure *this sprite* has anis, not just the group.
+      // ← ADDED: scale blob image down to tile-based collider size
+      e.scale.x = boarW / 128;
+      e.scale.y = boarH / 128;
+
+      // Sheet/anis
       if (hasAnis) {
         safeAssignSpriteSheet(e, level.assets.boarImg);
-        safeConfigureAniSheet(e, frameW, frameH, -8);
-
-        // add defs (safe)
+        safeConfigureAniSheet(e, frameW, frameH, 0); // ← CHANGED offsetY to 0
         try {
-          // only attempt if missing something obvious
           if (!e.anis || !e.anis.run) e.addAnis(level.assets.boarAnis);
         } catch (err) {
           // ignore; ensureBoarAnis will also try
@@ -438,7 +451,12 @@ export function updateBoars(level) {
     const frontHitsWall = frontProbeHitsWall(level, e);
     const headSeesFire = e.footProbe.overlapping(level.fire);
 
-    const dangerNow = noGroundAhead || frontHitsLeaf || frontHitsFire || frontHitsWall || headSeesFire;
+    const dangerNow =
+      noGroundAhead ||
+      frontHitsLeaf ||
+      frontHitsFire ||
+      frontHitsWall ||
+      headSeesFire;
 
     if (e.turnTimer === 0 && shouldTurnNow(e, dangerNow)) {
       turnBoar(level, e, -e.dir);
@@ -505,7 +523,7 @@ function updateBoarProbes(level, e) {
 }
 
 function updateGroundProbe(level, e, fallbackH) {
-  const h = boarHeight(e, Number(fallbackH ?? level.tuning.boar?.h ?? 12));
+  const h = boarHeight(e, Number(fallbackH ?? level.tuning.boar?.h ?? 10)); // ← CHANGED default
   placeProbe(e.groundProbe, e.x, e.y + h / 2 + 4);
 }
 
