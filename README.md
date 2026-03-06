@@ -19,6 +19,7 @@ A collect-and-complete style game where you navigate the map, collect leaves, an
 ## Assets
 
 Assets used:
+
 - Footprint sprites: CraftPix.Net — https://craftpix.net/download/54270/
 - Background (cartoon valley): PNGTree — https://pngtree.com/so/cartoon-background-transparent
 - Leaf sprite sheet (uploaded asset): assets/leaf_new.png

@@ -43,9 +43,18 @@
         "cameraLerp": 0.1,
 
         "parallax": [
-          { "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png", "speed": 0.2 },
-          { "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png", "speed": 0.4 },
-          { "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png", "speed": 0.6 }
+          {
+            "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png",
+            "speed": 0.2
+          },
+          {
+            "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png",
+            "speed": 0.4
+          },
+          {
+            "img": "assets/pngtree-cartoon-background-transparent-image-vector-png-image_11384864.png",
+            "speed": 0.6
+          }
         ]
       },
 
